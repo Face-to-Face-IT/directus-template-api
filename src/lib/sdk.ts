@@ -4,6 +4,7 @@ import {authentication, createDirectus, rest} from '@directus/sdk'
 import {ux} from '@oclif/core'
 import Bottleneck from 'bottleneck'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Directus SDK requires flexible schema type
 type Schema = any
 
 function log(message: string) {
@@ -41,8 +42,6 @@ export class DirectusError extends Error {
     return formattedError
   }
 
-
-
   async parseErrors(): Promise<void> {
     try {
       const data = await this.response.json()
@@ -57,7 +56,7 @@ export class DirectusError extends Error {
 }
 
 class Api {
-  public client: (RestClient<Schema> & AuthenticationClient<Schema>) | undefined
+  public client: (AuthenticationClient<Schema> & RestClient<Schema>) | undefined
   private authData: AuthenticationData | null = null
   private limiter: Bottleneck
 
@@ -72,8 +71,7 @@ class Api {
     })
 
     this.limiter.on('failed', async (error, jobInfo) => {
-
-      // @ts-ignore
+      // @ts-expect-error -- Error cause property typing mismatch
       if (error instanceof TypeError && error.message === 'fetch failed' && error.cause?.code === 'ECONNREFUSED') {
         log(`Connection refused. Please check the Directus URL and ensure the server is running. Not retrying. ${error.message}`)
         return
@@ -82,7 +80,6 @@ class Api {
       if (error instanceof DirectusError) {
         const retryAfter = error.headers?.get('Retry-After')
         const statusCode = error.status
-
 
         // If the status code is 400 or 401, we don't want to retry
         if (statusCode === 400 || statusCode === 401) {
@@ -101,12 +98,11 @@ class Api {
           log(`Server under pressure. Retrying after ${delay}ms`)
           return delay
         }
-
       }
 
       // For other errors, use exponential backoff, but only if we haven't exceeded retryCount
       if (jobInfo.retryCount < 3) {
-        const delay = Math.min(1000 * 2 ** jobInfo.retryCount, 30_000)
+        const delay = Math.min(1000 * (2 ** jobInfo.retryCount), 30_000)
         log(`Request failed. Retrying after ${delay}ms`)
         return delay
       }
@@ -152,7 +148,7 @@ class Api {
       throw new Error('API client is not initialized. Call initialize() first.')
     }
 
-    await this.client.login({ email, password })
+    await this.client.login({email, password})
   }
 
   public async loginWithToken(token: string): Promise<void> {

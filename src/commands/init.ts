@@ -1,27 +1,30 @@
-import {confirm, intro, select, text, isCancel, cancel, log as clackLog} from '@clack/prompts'
+import {
+  cancel, log as clackLog, confirm, intro, isCancel, select, text,
+} from '@clack/prompts'
 import {Args, Flags, ux} from '@oclif/core'
 import chalk from 'chalk'
+import {downloadTemplate} from 'giget'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'pathe'
+
 import {disableTelemetry} from '../flags/common.js'
 import {DIRECTUS_PURPLE} from '../lib/constants.js'
 import {init} from '../lib/init/index.js'
 import {animatedBunny} from '../lib/utils/animated-bunny.js'
-import {createGitHub} from '../services/github.js'
-import {readTemplateConfig} from '../lib/utils/template-config.js'
 import {createGigetString, parseGitHubUrl} from '../lib/utils/parse-github-url.js'
-import {downloadTemplate} from 'giget'
-import { BaseCommand } from './base.js'
-import { track, shutdown } from '../services/posthog.js'
+import {readTemplateConfig} from '../lib/utils/template-config.js'
+import {createGitHub} from '../services/github.js'
+import {shutdown, track} from '../services/posthog.js'
+import {BaseCommand} from './base.js'
 
 export interface InitFlags {
+  disableTelemetry?: boolean
   frontend?: string
   gitInit?: boolean
   installDeps?: boolean
   overwriteDir?: boolean
   template?: string
-  disableTelemetry?: boolean
 }
 
 export interface InitArgs {
@@ -47,6 +50,7 @@ export default class InitCommand extends BaseCommand {
   ]
 
   static flags = {
+    disableTelemetry,
     frontend: Flags.string({
       description: 'Frontend framework to use (e.g., nextjs, nuxt, astro)',
     }),
@@ -71,7 +75,6 @@ export default class InitCommand extends BaseCommand {
     template: Flags.string({
       description: 'Template name (e.g., simple-cms) or GitHub URL (e.g., https://github.com/directus-labs/starters/tree/main/simple-cms)',
     }),
-    disableTelemetry: disableTelemetry,
   }
 
   private targetDir = '.'
@@ -98,6 +101,8 @@ export default class InitCommand extends BaseCommand {
    * @returns void
    */
   private async runInteractive(flags: InitFlags, args: InitArgs): Promise<void> {
+    // Extract mutable flag values
+    let {frontend, overwriteDir, template} = flags
 
     // Show animated intro
     await animatedBunny('Let\'s create a new Directus project!')
@@ -113,14 +118,13 @@ export default class InitCommand extends BaseCommand {
         placeholder: './my-directus-project',
       })
 
-
       if (isCancel(dirResponse)) {
         cancel('Project creation cancelled.')
-        process.exit(0)
+        process.exit(0) // eslint-disable-line n/no-process-exit, unicorn/no-process-exit -- CLI user cancellation
       }
 
-       // If there's no response, set a default
-       if (!dirResponse) {
+      // If there's no response, set a default
+      if (!dirResponse) {
         clackLog.warn('No directory provided, using default: ./my-directus-project')
         dirResponse = './my-directus-project'
       }
@@ -128,19 +132,19 @@ export default class InitCommand extends BaseCommand {
       this.targetDir = dirResponse as string
     }
 
-    if (fs.existsSync(this.targetDir) && !flags.overwriteDir) {
+    if (fs.existsSync(this.targetDir) && !overwriteDir) {
       const overwriteDirResponse = await confirm({
-        message: 'Directory already exists. Would you like to overwrite it?',
         initialValue: false,
+        message: 'Directory already exists. Would you like to overwrite it?',
       })
 
       if (isCancel(overwriteDirResponse) || overwriteDirResponse === false) {
         cancel('Project creation cancelled.')
-        process.exit(0)
+        process.exit(0) // eslint-disable-line n/no-process-exit, unicorn/no-process-exit -- CLI user cancellation
       }
 
       if (overwriteDirResponse) {
-        flags.overwriteDir = true
+        overwriteDir = true
       }
     }
 
@@ -148,56 +152,47 @@ export default class InitCommand extends BaseCommand {
     const availableTemplates = await github.getTemplates()
 
     // 2. Prompt for template if not provided
-    let {template} = flags // This will store the chosen template ID
-    let chosenTemplateObject: { id: string; name: string; description?: string } | undefined;
-
-
     if (!template) {
-      const templateResponse = await select<any>({ // Explicit types for clarity
+      const templateResponse = await select<string>({
         message: 'Which Directus backend template would you like to use?',
         options: availableTemplates.map(tmpl => ({
-          value: tmpl.id, // The value submitted will be the ID (directory name)
-          label: tmpl.name, // Display the friendly name
           hint: tmpl.description, // Show the description as a hint
+          label: tmpl.name, // Display the friendly name
+          value: tmpl.id, // The value submitted will be the ID (directory name)
         })),
       })
 
       if (isCancel(templateResponse)) {
         cancel('Project creation cancelled.')
-        process.exit(0)
+        process.exit(0) // eslint-disable-line n/no-process-exit, unicorn/no-process-exit -- CLI user cancellation
       }
 
       template = templateResponse
     }
 
-    // Find the chosen template object for potential future use (e.g., display name later)
-    chosenTemplateObject = availableTemplates.find(t => t.id === template);
-
     // 3. Validate that the template exists in the available list
-    const isDirectUrl = template?.startsWith('http')
-
     // Validate against the 'id' property of the template objects
-    while (!isDirectUrl && !availableTemplates.some(t => t.id === template)) {
+    while (!template?.startsWith('http') && !availableTemplates.some(t => t.id === template)) {
       // Keep the warning message simple or refer back to the list shown in the prompt
       clackLog.warn(`Template ID "${template}" is not valid. Please choose from the list provided or enter a direct GitHub URL.`)
+      // eslint-disable-next-line no-await-in-loop -- Sequential user prompts require await in loop
       const templateNameResponse = await text({
         message: 'Please enter a valid template ID, a direct GitHub URL, or Ctrl+C to cancel:',
       })
 
       if (isCancel(templateNameResponse)) {
         cancel('Project creation cancelled.')
-        process.exit(0)
+        process.exit(0) // eslint-disable-line n/no-process-exit, unicorn/no-process-exit -- CLI user cancellation
       }
 
       template = templateNameResponse as string
-      chosenTemplateObject = availableTemplates.find(t => t.id === template); // Update chosen object after re-entry
     }
 
     flags.template = template // Ensure the flag stores the ID
 
     // Download the template to a temporary directory to read its configuration
     const tempDir = path.join(os.tmpdir(), `directus-template-${Date.now()}`)
-    let chosenFrontend = flags.frontend
+    let chosenFrontend = frontend
 
     try {
       await downloadTemplate(createGigetString(parseGitHubUrl(template)), {
@@ -209,21 +204,21 @@ export default class InitCommand extends BaseCommand {
       const templateInfo = readTemplateConfig(tempDir)
 
       // 4. If template has frontends and user hasn't specified a valid one, ask from the list
-      if (templateInfo?.frontendOptions.length > 0 && (!chosenFrontend || !templateInfo.frontendOptions.find(f => f.id === chosenFrontend))) {
+      if (templateInfo?.frontendOptions.length > 0 && (!chosenFrontend || !templateInfo.frontendOptions.some(f => f.id === chosenFrontend))) {
         const frontendResponse = await select({
           message: 'Which frontend framework do you want to use?',
-          options: [
-            ...templateInfo.frontendOptions.map(frontend => ({
+          options:
+            templateInfo.frontendOptions.map(frontend => ({
               label: frontend.name,
               value: frontend.id,
-            })),
+            }))
             // { label: 'No frontend', value: '' },
-          ],
+          ,
         })
 
         if (isCancel(frontendResponse)) {
           cancel('Project creation cancelled.')
-          process.exit(0)
+          process.exit(0) // eslint-disable-line n/no-process-exit, unicorn/no-process-exit -- CLI user cancellation
         }
 
         chosenFrontend = frontendResponse as string
@@ -233,7 +228,7 @@ export default class InitCommand extends BaseCommand {
     } finally {
       // Clean up temporary directory
       if (fs.existsSync(tempDir)) {
-        fs.rmSync(tempDir, { recursive: true, force: true })
+        fs.rmSync(tempDir, {force: true, recursive: true})
       }
     }
 
@@ -244,7 +239,7 @@ export default class InitCommand extends BaseCommand {
 
     if (isCancel(installDepsResponse)) {
       cancel('Project creation cancelled.')
-      process.exit(0)
+      process.exit(0) // eslint-disable-line n/no-process-exit, unicorn/no-process-exit -- CLI user cancellation
     }
 
     const installDeps = installDepsResponse as boolean
@@ -256,7 +251,7 @@ export default class InitCommand extends BaseCommand {
 
     if (isCancel(initGitResponse)) {
       cancel('Project creation cancelled.')
-      process.exit(0)
+      process.exit(0) // eslint-disable-line n/no-process-exit, unicorn/no-process-exit -- CLI user cancellation
     }
 
     const initGit = initGitResponse as boolean
@@ -264,18 +259,18 @@ export default class InitCommand extends BaseCommand {
     // Track the command start unless telemetry is disabled
     if (!flags.disableTelemetry) {
       await track({
-        lifecycle: 'start',
-        distinctId: this.userConfig.distinctId,
         command: 'init',
+        config: this.config,
+        distinctId: this.userConfig.distinctId,
         flags: {
           frontend: chosenFrontend,
           gitInit: initGit,
           installDeps,
           template,
         },
+        lifecycle: 'start',
         runId: this.runId,
-        config: this.config,
-      });
+      })
     }
 
     // Initialize the project
@@ -285,8 +280,8 @@ export default class InitCommand extends BaseCommand {
         frontend: chosenFrontend,
         gitInit: initGit,
         installDeps,
+        overwriteDir,
         template,
-        overwriteDir: flags.overwriteDir,
       },
 
     })
@@ -295,23 +290,22 @@ export default class InitCommand extends BaseCommand {
     if (!flags.disableTelemetry) {
       await track({
         command: 'init',
-        lifecycle: 'complete',
+        config: this.config,
         distinctId: this.userConfig.distinctId,
         flags: {
           frontend: chosenFrontend,
           gitInit: initGit,
           installDeps,
+          overwriteDir,
           template,
-          overwriteDir: flags.overwriteDir,
         },
+        lifecycle: 'complete',
         runId: this.runId,
-        config: this.config,
-      });
+      })
 
       await shutdown()
     }
 
     ux.exit(0)
   }
-
 }

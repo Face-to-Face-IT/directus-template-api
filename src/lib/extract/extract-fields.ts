@@ -21,7 +21,6 @@ export default async function extractFields(dir: string) {
 
     const fields = response
     .filter(
-      // @ts-ignore
       (i: { collection: string; meta?: { system?: boolean } }) => i.meta && !i.meta.system,
     )
     .map(i => {

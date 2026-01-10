@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'pathe'
+
 import type {DirectusTemplateConfig, TemplatePackageJson} from '../types.js'
 
 export interface TemplateInfo {
@@ -42,7 +43,7 @@ export function readTemplateConfig(dir: string): TemplateInfo | null {
       config: templateConfig,
       frontendOptions,
     }
-  } catch (error) {
+  } catch {
     return null
   }
 }

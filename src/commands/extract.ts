@@ -1,4 +1,6 @@
-import {text, select, intro, log} from '@clack/prompts'
+import {
+  intro, log, select, text,
+} from '@clack/prompts'
 import {Flags, ux} from '@oclif/core'
 import slugify from '@sindresorhus/slugify'
 import chalk from 'chalk'
@@ -6,19 +8,22 @@ import fs from 'node:fs'
 import path from 'pathe'
 
 import * as customFlags from '../flags/common.js'
-import {DIRECTUS_PINK, DIRECTUS_PURPLE, SEPARATOR, BSL_LICENSE_TEXT, BSL_LICENSE_CTA, BSL_LICENSE_HEADLINE} from '../lib/constants.js'
-import {animatedBunny} from '../lib/utils/animated-bunny.js'
-import { BaseCommand } from './base.js'
-import { track, shutdown } from '../services/posthog.js'
-
-import extract from '../lib/extract/index.js'
+import {
+  BSL_LICENSE_CTA, BSL_LICENSE_HEADLINE, BSL_LICENSE_TEXT, DIRECTUS_PINK, DIRECTUS_PURPLE, SEPARATOR,
+} from '../lib/constants.js'
 import {type ExtractFlags, validateExtractFlags} from '../lib/extract/extract-flags.js'
-import {getDirectusToken, getDirectusUrl, initializeDirectusApi, validateAuthFlags, getDirectusEmailAndPassword} from '../lib/utils/auth.js'
+import extract from '../lib/extract/index.js'
+import {animatedBunny} from '../lib/utils/animated-bunny.js'
+import {
+  getDirectusEmailAndPassword, getDirectusToken, getDirectusUrl, initializeDirectusApi, validateAuthFlags,
+} from '../lib/utils/auth.js'
 import catchError from '../lib/utils/catch-error.js'
 import {
   generatePackageJsonContent,
   generateReadmeContent,
 } from '../lib/utils/template-defaults.js'
+import {shutdown, track} from '../services/posthog.js'
+import {BaseCommand} from './base.js'
 
 export type {ExtractFlags} from '../lib/extract/extract-flags.js'
 
@@ -44,6 +49,7 @@ export default class ExtractCommand extends BaseCommand {
     }),
     directusToken: customFlags.directusToken,
     directusUrl: customFlags.directusUrl,
+    disableTelemetry: customFlags.disableTelemetry,
     extensions: Flags.boolean({
       allowNo: true,
       default: undefined,
@@ -90,7 +96,6 @@ export default class ExtractCommand extends BaseCommand {
       default: undefined,
       description: 'Extract users',
     }),
-    disableTelemetry: customFlags.disableTelemetry,
   }
 
   /**
@@ -116,17 +121,17 @@ export default class ExtractCommand extends BaseCommand {
     if (!flags.disableTelemetry) {
       await track({
         command: 'extract',
-        lifecycle: 'start',
+        config: this.config,
         distinctId: this.userConfig.distinctId,
         flags: {
-          templateName,
-          templateLocation: directory,
           directusUrl: flags.directusUrl,
           programmatic: flags.programmatic,
+          templateLocation: directory,
+          templateName,
         },
+        lifecycle: 'start',
         runId: this.runId,
-        config: this.config,
-      });
+      })
     }
 
     try {
@@ -162,18 +167,18 @@ export default class ExtractCommand extends BaseCommand {
     if (!flags.disableTelemetry) {
       await track({
         command: 'extract',
-        lifecycle: 'complete',
+        config: this.config,
         distinctId: this.userConfig.distinctId,
         flags: {
-          templateName,
-          templateLocation: directory,
           directusUrl: flags.directusUrl,
           programmatic: flags.programmatic,
+          templateLocation: directory,
+          templateName,
         },
+        lifecycle: 'complete',
         runId: this.runId,
-        config: this.config,
-      });
-      await shutdown();
+      })
+      await shutdown()
     }
 
     log.warn(BSL_LICENSE_HEADLINE)
@@ -203,9 +208,9 @@ export default class ExtractCommand extends BaseCommand {
     })
 
     const directory = await text({
-      placeholder: `templates/${slugify(templateName as string)}`,
       defaultValue: `templates/${slugify(templateName as string)}`,
       message: "What directory would you like to extract the template to? If it doesn't exist, it will be created.",
+      placeholder: `templates/${slugify(templateName as string)}`,
     })
 
     ux.stdout(`You selected ${ux.colorize(DIRECTUS_PINK, directory as string)}`)
@@ -218,11 +223,11 @@ export default class ExtractCommand extends BaseCommand {
 
     // Prompt for login method
     const loginMethod = await select({
+      message: 'How do you want to log in?',
       options: [
         {label: 'Directus Access Token', value: 'token'},
         {label: 'Email and Password', value: 'email'},
       ],
-      message: 'How do you want to log in?',
     })
 
     if (loginMethod === 'token') {

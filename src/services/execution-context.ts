@@ -2,15 +2,15 @@
  * Defines the structure for the execution context, holding telemetry information.
  */
 export interface ExecutionContext {
-  distinctId?: string;
   disableTelemetry?: boolean;
+  distinctId?: string;
 }
 
 // Module-level variable to hold the current context.
 // Initialize with default values (telemetry enabled, no distinctId yet).
 let currentContext: ExecutionContext = {
   disableTelemetry: false,
-};
+}
 
 /**
  * Sets the global execution context.
@@ -18,7 +18,7 @@ let currentContext: ExecutionContext = {
  * @param context The context object containing distinctId and disableTelemetry status.
  */
 export function setExecutionContext(context: ExecutionContext): void {
-  currentContext = context;
+  currentContext = context
 }
 
 /**
@@ -26,5 +26,5 @@ export function setExecutionContext(context: ExecutionContext): void {
  * @returns The current execution context.
  */
 export function getExecutionContext(): ExecutionContext {
-  return currentContext;
+  return currentContext
 }

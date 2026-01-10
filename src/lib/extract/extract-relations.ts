@@ -19,14 +19,14 @@ export default async function extractRelations(dir: string) {
     const fields = await api.client.request(readFields())
 
     const customFields = fields.filter(
-      (i: any) => !i.meta?.system,
+      (i: {meta?: {system?: boolean}}) => !i.meta?.system,
     )
 
     const relations = response
 
     // Filter out relations where the collection starts with 'directus_' && the field is not within the customFields array
     .filter(
-      (i: any) =>
+      (i: {collection: string; field: string}) =>
         !i.collection.startsWith('directus_', 0)
         || customFields.some(
           (f: { collection: string; field: string }) =>

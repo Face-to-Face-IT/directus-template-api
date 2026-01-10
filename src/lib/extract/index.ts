@@ -1,6 +1,8 @@
 import {ux} from '@oclif/core'
 import fs from 'node:fs'
 
+import type {ExtractOptions} from './extract-flags.js'
+
 import extractAccess from './extract-access.js'
 import {downloadAllFiles} from './extract-assets.js'
 import extractCollections from './extract-collections.js'
@@ -20,7 +22,6 @@ import extractSchema from './extract-schema.js'
 import extractSettings from './extract-settings.js'
 import extractTranslations from './extract-translations.js'
 import extractUsers from './extract-users.js'
-import type {ExtractOptions} from './extract-flags.js'
 
 export default async function extract(dir: string, flags: ExtractOptions) {
   // Get the destination directory for the actual files

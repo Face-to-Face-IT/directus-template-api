@@ -15,8 +15,12 @@ export async function waitFor(
   } = options
 
   for (let i = 0; i < maxAttempts; i++) {
+    // eslint-disable-next-line no-await-in-loop -- Intentional sequential polling
     if (await checkFn()) return true
-    await new Promise(resolve => setTimeout(resolve, interval))
+    // eslint-disable-next-line no-await-in-loop -- Intentional delay between attempts
+    await new Promise(resolve => {
+      setTimeout(resolve, interval)
+    })
   }
 
   throw new Error(errorMessage)

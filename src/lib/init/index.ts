@@ -1,23 +1,26 @@
-import {note, outro, spinner, log as clackLog} from '@clack/prompts'
+import {
+  log as clackLog, note, outro, spinner,
+} from '@clack/prompts'
 import {ux} from '@oclif/core'
-import chalk from 'chalk'
+import dotenv from 'dotenv'
 import {execa} from 'execa'
 import {type DownloadTemplateResult, downloadTemplate} from 'giget'
 import {glob} from 'glob'
 import fs from 'node:fs'
-import {detectPackageManager, installDependencies, type PackageManager} from 'nypm'
+import {type PackageManager, detectPackageManager, installDependencies} from 'nypm'
 import path from 'pathe'
-import dotenv from 'dotenv'
+
+import type {InitFlags} from '../../commands/init.js'
 
 import ApplyCommand from '../../commands/apply.js'
 import {createDocker} from '../../services/docker.js'
+import {
+  BSL_LICENSE_CTA, BSL_LICENSE_HEADLINE, BSL_LICENSE_TEXT, pinkText,
+} from '../constants.js'
 import catchError from '../utils/catch-error.js'
 import {createGigetString, parseGitHubUrl} from '../utils/parse-github-url.js'
 import {readTemplateConfig} from '../utils/template-config.js'
-import {DIRECTUS_CONFIG, DOCKER_CONFIG} from './config.js'
-import type {InitFlags} from '../../commands/init.js'
-import {BSL_LICENSE_TEXT, BSL_LICENSE_HEADLINE, BSL_LICENSE_CTA, pinkText} from '../constants.js'
-
+import {DOCKER_CONFIG} from './config.js'
 
 export async function init({dir, flags}: {dir: string, flags: InitFlags}) {
   // Check target directory
@@ -46,15 +49,13 @@ export async function init({dir, flags}: {dir: string, flags: InitFlags}) {
 
     // For direct URLs, we need to check if there's a directus directory
     // If not, assume the entire repo is a directus template
-    if (isDirectUrl) {
-      if (!fs.existsSync(directusDir)) {
-        // Move all files to directus directory
-        fs.mkdirSync(directusDir, {recursive: true})
-        const files = fs.readdirSync(dir)
-        for (const file of files) {
-          if (file !== 'directus') {
-            fs.renameSync(path.join(dir, file), path.join(directusDir, file))
-          }
+    if (isDirectUrl && !fs.existsSync(directusDir)) {
+      // Move all files to directus directory
+      fs.mkdirSync(directusDir, {recursive: true})
+      const files = fs.readdirSync(dir)
+      for (const file of files) {
+        if (file !== 'directus') {
+          fs.renameSync(path.join(dir, file), path.join(directusDir, file))
         }
       }
     }
@@ -125,35 +126,34 @@ export async function init({dir, flags}: {dir: string, flags: InitFlags}) {
         throw new Error(dockerStatus.message)
       }
 
+      await dockerService.startContainers(directusDir)
+      const healthCheckUrl = `${directusInfo.url || 'http://localhost:8055'}${DOCKER_CONFIG.healthCheckEndpoint}`
 
-        await dockerService.startContainers(directusDir)
-        const healthCheckUrl = `${directusInfo.url || 'http://localhost:8055'}${DOCKER_CONFIG.healthCheckEndpoint}`
+      // Wait for healthy before proceeding
+      const isHealthy = await dockerService.waitForHealthy(healthCheckUrl)
 
-        // Wait for healthy before proceeding
-        const isHealthy = await dockerService.waitForHealthy(healthCheckUrl)
+      if (!isHealthy) {
+        throw new Error('Directus failed to become healthy')
+      }
 
-        if (!isHealthy) {
-          throw new Error('Directus failed to become healthy')
-        }
+      // Check if a template path is specified in the config and exists
+      let templatePath: string | undefined
+      if (templateInfo?.config?.template && typeof templateInfo.config.template === 'string') {
+        templatePath = path.join(dir, templateInfo.config.template) // Path relative to root dir
+      }
 
-        // Check if a template path is specified in the config and exists
-        let templatePath: string | undefined;
-        if (templateInfo?.config?.template && typeof templateInfo.config.template === 'string') {
-          templatePath = path.join(dir, templateInfo.config.template); // Path relative to root dir
-        }
-
-        if (templatePath && fs.existsSync(templatePath)) {
-          ux.stdout(`Applying template from: ${templatePath}`)
-          await ApplyCommand.run([
-            `--directusUrl=${directusInfo.url || 'http://localhost:8055'}`,
-            '-p',
-            `--userEmail=${directusInfo.email}`,
-            `--userPassword=${directusInfo.password}`,
-            `--templateLocation=${templatePath}`,
-          ])
-        } else {
-           ux.stdout('Skipping backend template application.')
-        }
+      if (templatePath && fs.existsSync(templatePath)) {
+        ux.stdout(`Applying template from: ${templatePath}`)
+        await ApplyCommand.run([
+          `--directusUrl=${directusInfo.url || 'http://localhost:8055'}`,
+          '-p',
+          `--userEmail=${directusInfo.email}`,
+          `--userPassword=${directusInfo.password}`,
+          `--templateLocation=${templatePath}`,
+        ])
+      } else {
+        ux.stdout('Skipping backend template application.')
+      }
     }
 
     // Detect package manager even if not installing dependencies
@@ -196,7 +196,7 @@ export async function init({dir, flags}: {dir: string, flags: InitFlags}) {
     const directusLoginText = `- You can login with the email: ${pinkText(directusInfo.email)} and password: ${pinkText(directusInfo.password)}. \n`
     const frontendText = flags.frontend ? `- To start the frontend, run ${pinkText(`cd ${flags.frontend}`)} and then ${pinkText(`${packageManager?.name} run dev`)}. \n` : ''
     const projectText = `- Navigate to your project directory using ${pinkText(`cd ${relativeDir}`)}. \n`
-    const readmeText = '- Review the \`./README.md\` file for more information and next steps.'
+    const readmeText = '- Review the `./README.md` file for more information and next steps.'
 
     const nextSteps = `${directusText}${directusLoginText}${projectText}${frontendText}${readmeText}`
 

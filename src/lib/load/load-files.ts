@@ -1,11 +1,12 @@
-import { readFiles, uploadFiles } from '@directus/sdk'
-import { ux } from '@oclif/core'
-import { FormData } from 'formdata-node'
-import { readFileSync } from 'node:fs'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Directus SDK types are dynamic */
+import {readFiles, uploadFiles} from '@directus/sdk'
+import {ux} from '@oclif/core'
+import {FormData} from 'formdata-node'
+import {readFileSync} from 'node:fs'
 import path from 'pathe'
 
-import { DIRECTUS_PINK } from '../constants.js'
-import { api } from '../sdk.js'
+import {DIRECTUS_PINK} from '../constants.js'
+import {api} from '../sdk.js'
 import catchError from '../utils/catch-error.js'
 import readFile from '../utils/read-file.js'
 
@@ -39,7 +40,7 @@ export default async function loadFiles(dir: string) {
       await Promise.all(filesToUpload.map(async asset => {
         const fileName = asset.filename_disk
         const assetPath = path.resolve(dir, 'assets', fileName)
-        const fileStream = new Blob([readFileSync(assetPath)], { type: asset.type })
+        const fileStream = new Blob([readFileSync(assetPath)], {type: asset.type})
 
         const form = new FormData()
         form.append('id', asset.id)

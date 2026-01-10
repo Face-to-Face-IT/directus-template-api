@@ -1,20 +1,28 @@
-import { Flags, ux} from '@oclif/core'
-import {text, select, log, intro} from '@clack/prompts'
+import {
+  intro, log, select, text,
+} from '@clack/prompts'
+import {Flags, ux} from '@oclif/core'
+import chalk from 'chalk'
 import * as path from 'pathe'
-import {animatedBunny} from '../lib/utils/animated-bunny.js'
+
 import * as customFlags from '../flags/common.js'
-import {DIRECTUS_PINK, DIRECTUS_PURPLE, SEPARATOR} from '../lib/constants.js'
+import {
+  BSL_LICENSE_CTA, BSL_LICENSE_HEADLINE, BSL_LICENSE_TEXT, DIRECTUS_PINK, DIRECTUS_PURPLE, SEPARATOR,
+} from '../lib/constants.js'
 import {type ApplyFlags, validateInteractiveFlags, validateProgrammaticFlags} from '../lib/load/apply-flags.js'
 import apply from '../lib/load/index.js'
-import {getDirectusToken, getDirectusUrl, initializeDirectusApi, getDirectusEmailAndPassword} from '../lib/utils/auth.js'
+import {animatedBunny} from '../lib/utils/animated-bunny.js'
+import {
+  getDirectusEmailAndPassword, getDirectusToken, getDirectusUrl, initializeDirectusApi,
+} from '../lib/utils/auth.js'
 import catchError from '../lib/utils/catch-error.js'
-import {getCommunityTemplates, getGithubTemplate, getInteractiveLocalTemplate, getLocalTemplate} from '../lib/utils/get-template.js'
+import {
+  getCommunityTemplates, getGithubTemplate, getInteractiveLocalTemplate, getLocalTemplate,
+} from '../lib/utils/get-template.js'
 import {logger} from '../lib/utils/logger.js'
 import openUrl from '../lib/utils/open-url.js'
-import chalk from 'chalk'
-import { BaseCommand } from './base.js'
-import { track, shutdown } from '../services/posthog.js'
-import { BSL_LICENSE_HEADLINE, BSL_LICENSE_TEXT, BSL_LICENSE_CTA } from '../lib/constants.js'
+import {shutdown, track} from '../services/posthog.js'
+import {BaseCommand} from './base.js'
 interface Template {
   directoryPath: string
   templateName: string
@@ -42,6 +50,7 @@ export default class ApplyCommand extends BaseCommand {
     }),
     directusToken: customFlags.directusToken,
     directusUrl: customFlags.directusUrl,
+    disableTelemetry: customFlags.disableTelemetry,
     extensions: Flags.boolean({
       allowNo: true,
       default: undefined,
@@ -95,7 +104,6 @@ export default class ApplyCommand extends BaseCommand {
       default: undefined,
       description: 'Load users',
     }),
-    disableTelemetry: customFlags.disableTelemetry,
 
   }
 
@@ -125,13 +133,13 @@ export default class ApplyCommand extends BaseCommand {
     intro(`${chalk.bgHex(DIRECTUS_PURPLE).white.bold('Directus Template CLI')} - Apply Template`)
 
     const templateType = await select({
-        options: [
+      message: 'What type of template would you like to apply?',
+      options: [
         {label: 'Community templates', value: 'community'},
         {label: 'From a local directory', value: 'local'},
         {label: 'From a public GitHub repository', value: 'github'},
         {label: 'Get premium templates', value: 'directus-plus'},
       ],
-      message: 'What type of template would you like to apply?',
     })
 
     let template: Template
@@ -140,8 +148,8 @@ export default class ApplyCommand extends BaseCommand {
     case 'community': {
       const templates = await getCommunityTemplates()
       const selectedTemplate = await select({
-        options: templates.map(t => ({label: t.templateName, value: t})),
         message: 'Select a template.',
+        options: templates.map(t => ({label: t.templateName, value: t})),
       })
       template = selectedTemplate as Template
       break
@@ -178,11 +186,11 @@ export default class ApplyCommand extends BaseCommand {
 
     // Prompt for login method
     const loginMethod = await select({
+      message: 'How do you want to log in?',
       options: [
         {label: 'Directus Access Token', value: 'token'},
         {label: 'Email and Password', value: 'email'},
       ],
-      message: 'How do you want to log in?',
     })
 
     if (loginMethod === 'token') {
@@ -204,7 +212,7 @@ export default class ApplyCommand extends BaseCommand {
       if (!validatedFlags.disableTelemetry) {
         await track({
           command: 'apply',
-          lifecycle: 'start',
+          config: this.config,
           distinctId: this.userConfig.distinctId,
           flags: {
             programmatic: false,
@@ -213,9 +221,9 @@ export default class ApplyCommand extends BaseCommand {
             // Include other relevant flags from validatedFlags if needed
             ...validatedFlags,
           },
+          lifecycle: 'start',
           runId: this.runId,
-          config: this.config,
-        });
+        })
       }
 
       await apply(template.directoryPath, validatedFlags)
@@ -226,17 +234,17 @@ export default class ApplyCommand extends BaseCommand {
       if (!validatedFlags.disableTelemetry) {
         await track({
           command: 'apply',
-          lifecycle: 'complete',
+          config: this.config,
           distinctId: this.userConfig.distinctId,
           flags: {
             templateName: template.templateName,
             templateType,
             ...validatedFlags,
           },
+          lifecycle: 'complete',
           runId: this.runId,
-          config: this.config,
-        });
-        await shutdown();
+        })
+        await shutdown()
       }
 
       ux.stdout(SEPARATOR)
@@ -295,7 +303,7 @@ export default class ApplyCommand extends BaseCommand {
     if (!validatedFlags.disableTelemetry) {
       await track({
         command: 'apply',
-        lifecycle: 'start',
+        config: this.config,
         distinctId: this.userConfig.distinctId,
         flags: {
           programmatic: true,
@@ -303,9 +311,9 @@ export default class ApplyCommand extends BaseCommand {
           // Include other relevant flags from validatedFlags
           ...validatedFlags,
         },
+        lifecycle: 'start',
         runId: this.runId,
-        config: this.config,
-      });
+      })
     }
 
     await apply(template.directoryPath, validatedFlags)
@@ -316,17 +324,17 @@ export default class ApplyCommand extends BaseCommand {
     if (!validatedFlags.disableTelemetry) {
       await track({
         command: 'apply',
-        lifecycle: 'complete',
+        config: this.config,
         distinctId: this.userConfig.distinctId,
         flags: {
           templateName: template.templateName,
           // Include other relevant flags from validatedFlags
           ...validatedFlags,
         },
+        lifecycle: 'complete',
         runId: this.runId,
-        config: this.config,
-      });
-      await shutdown();
+      })
+      await shutdown()
     }
 
     ux.stdout(SEPARATOR)
@@ -355,11 +363,11 @@ export default class ApplyCommand extends BaseCommand {
       }
 
       const selectedTemplate = await select({
+        message: 'Multiple templates found. Please select one:',
         options: templates.map(t => ({
           label: `${t.templateName} (${path.basename(t.directoryPath)})`,
           value: t,
         })),
-        message: 'Multiple templates found. Please select one:',
       })
       return selectedTemplate as Template
     } catch (error) {

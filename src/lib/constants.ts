@@ -24,7 +24,6 @@ export const POSTHOG_HOST = 'https://us.i.posthog.com'
 
 export const DEFAULT_BRANCH = 'main'
 
-
 export const BSL_LICENSE_URL = 'https://directus.io/bsl'
 export const BSL_EMAIL = 'licensing@directus.io'
 

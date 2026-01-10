@@ -30,7 +30,7 @@ export async function animatedBunny(customMessage?: string) {
   process.on('exit', cleanup)
   process.on('SIGINT', () => {
     cleanup()
-    process.exit(0)
+    process.exit(0) // eslint-disable-line n/no-process-exit -- Required for clean SIGINT handling
   })
 
   const updateFrame = () => {
@@ -57,7 +57,9 @@ export async function animatedBunny(customMessage?: string) {
 
   try {
     // Run the animation for the duration of typing plus 1 second
-    await new Promise(resolve => setTimeout(resolve, saying.length * 25 + 1000))
+    await new Promise(resolve => {
+      setTimeout(resolve, (saying.length * 25) + 1000)
+    })
   } finally {
     cleanup()
     // Remove the event listeners

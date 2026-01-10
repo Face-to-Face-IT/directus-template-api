@@ -1,8 +1,8 @@
-import {spinner, log} from '@clack/prompts'
+import {log, spinner} from '@clack/prompts'
+import {ux} from '@oclif/core'
 import {execa} from 'execa'
 import net from 'node:net'
-import {ux} from '@oclif/core'
-import path from 'pathe'
+
 import catchError from '../lib/utils/catch-error.js'
 import {waitFor} from '../lib/utils/wait.js'
 
@@ -37,7 +37,7 @@ interface PortCheck {
  * @returns Object indicating if port is in use and what's using it
  */
 async function checkPort(port: number): Promise<PortCheck> {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const server = net.createServer()
 
     server.once('error', async (err: NodeJS.ErrnoException) => {
@@ -46,18 +46,18 @@ async function checkPort(port: number): Promise<PortCheck> {
         try {
           const {stdout} = await execa('lsof', ['-i', `:${port}`])
           const process = stdout.split('\n')[1]?.split(/\s+/)[0] // Get process name
-          resolve({ inUse: true, process })
+          resolve({inUse: true, process})
         } catch {
-          resolve({ inUse: true })
+          resolve({inUse: true})
         }
       } else {
-        resolve({ inUse: false })
+        resolve({inUse: false})
       }
     })
 
     server.once('listening', () => {
       server.close()
-      resolve({ inUse: false })
+      resolve({inUse: false})
     })
 
     server.listen(port)
@@ -70,24 +70,25 @@ async function checkPort(port: number): Promise<PortCheck> {
  */
 async function checkRequiredPorts(): Promise<void> {
   const portsToCheck = [
-    { port: 8055, name: 'Directus API' },
-    { port: 5432, name: 'PostgreSQL' },
+    {name: 'Directus API', port: 8055},
+    {name: 'PostgreSQL', port: 5432},
   ]
 
   let hasConflicts = false
 
-  for (const {port, name} of portsToCheck) {
+  for (const {name, port} of portsToCheck) {
+    // eslint-disable-next-line no-await-in-loop -- Sequential port checking required
     const status = await checkPort(port)
     if (status.inUse) {
       hasConflicts = true
-      const process = status.process ? ` by ${status.process}` : ''
-      ux.warn(`Port ${port} (${name}) is already in use${process}`)
+      const portProcess = status.process ? ` by ${status.process}` : ''
+      ux.warn(`Port ${port} (${name}) is already in use${portProcess}`)
     }
   }
 
   if (hasConflicts) {
     ux.warn('Please stop any conflicting services before continuing.')
-    process.exit(1)
+    process.exit(1) // eslint-disable-line n/no-process-exit, unicorn/no-process-exit -- CLI exit on port conflict
   }
 }
 
@@ -131,18 +132,18 @@ async function checkDocker(): Promise<DockerCheckResult> {
  */
 async function getRequiredImagesFromCompose(cwd: string): Promise<string[]> {
   try {
-    const { stdout } = await execa('docker', ['compose', 'config', '--images'], { cwd });
+    const {stdout} = await execa('docker', ['compose', 'config', '--images'], {cwd})
     // stdout contains a list of image names, one per line
-    return stdout.split('\n').filter(img => img.trim() !== ''); // Filter out empty lines
+    return stdout.split('\n').filter(img => img.trim() !== '') // Filter out empty lines
   } catch (error) {
     // Handle potential errors, e.g., compose file not found or invalid
-    log.error('Failed to get images from docker-compose file.');
+    log.error('Failed to get images from docker-compose file.')
     catchError(error, {
-      context: { cwd, function: 'getRequiredImagesFromCompose' },
+      context: {cwd, function: 'getRequiredImagesFromCompose'},
       fatal: false, // Don't necessarily exit, maybe let startContainers handle it
       logToFile: true,
-    });
-    return []; // Return empty list on error
+    })
+    return [] // Return empty list on error
   }
 }
 
@@ -153,25 +154,26 @@ async function getRequiredImagesFromCompose(cwd: string): Promise<string[]> {
  */
 async function checkImagesExist(imageNames: string[]): Promise<boolean> {
   if (imageNames.length === 0) {
-    return true; // No images to check, technically they all "exist"
+    return true // No images to check, technically they all "exist"
   }
+
   try {
     // Use Promise.allSettled to check all images even if some commands fail
     const results = await Promise.allSettled(
-      imageNames.map(imageName => execa('docker', ['inspect', '--type=image', imageName]))
-    );
+      imageNames.map(imageName => execa('docker', ['inspect', '--type=image', imageName])),
+    )
 
     // Check if all inspect commands succeeded (exit code 0)
-    return results.every(result => result.status === 'fulfilled' && result.value.exitCode === 0);
+    return results.every(result => result.status === 'fulfilled' && result.value.exitCode === 0)
   } catch (error) {
     // This catch block might be redundant due to allSettled, but good for safety
-    log.error('Error checking for Docker images.');
+    log.error('Error checking for Docker images.')
     catchError(error, {
-      context: { imageNames, function: 'checkImagesExist' },
+      context: {function: 'checkImagesExist', imageNames},
       fatal: false,
       logToFile: true,
-    });
-    return false; // Assume images don't exist if there's an error checking
+    })
+    return false // Assume images don't exist if there's an error checking
   }
 }
 
@@ -187,25 +189,24 @@ async function startContainers(cwd: string): Promise<void> {
     await checkRequiredPorts()
 
     // Get required images from compose file
-    const requiredImages = await getRequiredImagesFromCompose(cwd);
-    const imagesExist = await checkImagesExist(requiredImages);
+    const requiredImages = await getRequiredImagesFromCompose(cwd)
+    const imagesExist = await checkImagesExist(requiredImages)
 
     // Log a message if images need downloading
     if (!imagesExist && requiredImages.length > 0) {
-      log.info('Required Docker image(s) are missing and will be downloaded.');
+      log.info('Required Docker image(s) are missing and will be downloaded.')
     }
 
-    const startMessage = imagesExist || requiredImages.length === 0 ? 'Starting Docker containers...' : 'Downloading required Docker images...';
-    const endMessage = imagesExist || requiredImages.length === 0 ? 'Docker containers running!' : 'Docker images downloaded and containers started!';
+    const startMessage = imagesExist || requiredImages.length === 0 ? 'Starting Docker containers...' : 'Downloading required Docker images...'
+    const endMessage = imagesExist || requiredImages.length === 0 ? 'Docker containers running!' : 'Docker images downloaded and containers started!'
 
-    s.start(startMessage); // Start spinner with the appropriate message
+    s.start(startMessage) // Start spinner with the appropriate message
 
     await execa('docker', ['compose', 'up', '-d'], {
       cwd,
     })
 
-    s.stop(endMessage); // Update spinner message on success
-
+    s.stop(endMessage) // Update spinner message on success
   } catch (error) {
     s.stop('Error starting Docker containers.') // Stop spinner on error
     catchError(error, {

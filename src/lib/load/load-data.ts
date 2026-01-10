@@ -1,4 +1,7 @@
-import {createItems, readItems, updateItemsBatch, updateSingleton} from '@directus/sdk'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Directus SDK types are dynamic */
+import {
+  createItems, readItems, updateItemsBatch, updateSingleton,
+} from '@directus/sdk'
 import {ux} from '@oclif/core'
 import path from 'pathe'
 
@@ -63,9 +66,10 @@ async function getExistingPrimaryKeys(collection: string, primaryKeyField: strin
   let page = 1
   const limit = 1000 // Adjust based on your needs and API limits
 
+  // eslint-disable-next-line no-constant-condition -- Paginating until exhausted
   while (true) {
     try {
-      // @ts-ignore
+      // eslint-disable-next-line no-await-in-loop -- Sequential pagination required
       const response = await api.client.request(readItems(collection, {
         fields: [primaryKeyField],
         limit,
@@ -87,7 +91,7 @@ async function getExistingPrimaryKeys(collection: string, primaryKeyField: strin
   return existingKeys
 }
 
-async function uploadBatch(collection: string, batch: any[], method: Function) {
+async function uploadBatch(collection: string, batch: any[], method: (collection: string, items: any[]) => any) {
   try {
     await api.client.request(method(collection, batch))
   } catch (error) {
@@ -109,6 +113,7 @@ async function loadFullData(dir:string) {
     const data = readFile(name, sourceDir)
 
     const batches = chunkArray(data, BATCH_SIZE).map(batch =>
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Removing user fields from data
       batch.map(({user_created, user_updated, ...cleanedRow}) => cleanedRow),
     )
 
@@ -130,6 +135,7 @@ async function loadSingletons(dir:string) {
     const sourceDir = path.resolve(dir, 'content')
     const data = readFile(name, sourceDir)
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Removing user fields from data
       const {user_created, user_updated, ...cleanedData} = data as any
 
       await api.client.request(updateSingleton(name, cleanedData))

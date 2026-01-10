@@ -15,13 +15,13 @@ export interface ExtractOptions {
 export interface ExtractFlags extends ExtractOptions {
   directusToken: string;
   directusUrl: string;
+  disableTelemetry?: boolean;
+  partial?: boolean;
   programmatic: boolean;
   templateLocation: string;
   templateName: string;
   userEmail: string;
   userPassword: string;
-  disableTelemetry?: boolean;
-  partial?: boolean;
 }
 
 export const extractFlags = [

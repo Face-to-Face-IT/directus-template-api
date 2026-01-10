@@ -1,4 +1,7 @@
-import {createFlow, createOperations, readFlows, updateOperation} from '@directus/sdk'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Directus SDK types are dynamic */
+import {
+  createFlow, createOperations, readFlows, updateOperation,
+} from '@directus/sdk'
 import {ux} from '@oclif/core'
 
 import {DIRECTUS_PINK} from '../constants.js'
@@ -66,7 +69,7 @@ export async function loadOperations(operations: any[]) {
       })),
     ))
 
-    for (const [index, result] of results.entries()) {
+    for (const result of results) {
       if (result.status === 'rejected') {
         catchError(result.reason)
       }

@@ -83,11 +83,13 @@ async function findNestedTemplates(dir: string, depth: number): Promise<Template
   for (const entry of entries) {
     if (entry.isDirectory()) {
       const fullPath = path.join(dir, entry.name)
+      // eslint-disable-next-line no-await-in-loop -- Sequential directory traversal required
       const dirTemplates = await readAllTemplates(fullPath)
       templates.push(...dirTemplates)
 
       if (dirTemplates.length === 0 && depth > 1) {
         // If no templates found and we can go deeper, search subdirectories
+        // eslint-disable-next-line no-await-in-loop -- Sequential directory traversal required
         const nestedTemplates = await findNestedTemplates(fullPath, depth - 1)
         templates.push(...nestedTemplates)
       }

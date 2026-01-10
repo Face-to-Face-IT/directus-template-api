@@ -16,9 +16,11 @@ export default async function extractPresets(dir: string) {
     const response = await api.client.request(readPresets(
       {
         // Only get the global presets
-        filter: {user: {
-          _null: true,
-        }},
+        filter: {
+          user: {
+            _null: true,
+          },
+        },
         limit: -1,
       },
     ))

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Directus SDK types are dynamic */
 import {createRelation, readRelations} from '@directus/sdk'
 import {ux} from '@oclif/core'
 

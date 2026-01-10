@@ -1,4 +1,6 @@
-import {createDashboard, createPanel, readDashboards, readPanels} from '@directus/sdk'
+import {
+  createDashboard, createPanel, readDashboards, readPanels,
+} from '@directus/sdk'
 import {ux} from '@oclif/core'
 
 import {DIRECTUS_PINK} from '../constants.js'

@@ -7,6 +7,7 @@ export interface ApplyFlags {
   dashboards: boolean;
   directusToken: string;
   directusUrl: string;
+  disableTelemetry?: boolean;
   extensions: boolean;
   files: boolean;
   flows: boolean;
@@ -20,7 +21,6 @@ export interface ApplyFlags {
   userEmail: string;
   userPassword: string;
   users?: boolean;
-  disableTelemetry?: boolean;
 }
 
 export const loadFlags = [
@@ -36,13 +36,13 @@ export const loadFlags = [
 ] as const
 
 export function validateProgrammaticFlags(flags: ApplyFlags): ApplyFlags {
-  const {directusToken, directusUrl, templateLocation, userEmail, userPassword} = flags
+  const {directusToken, directusUrl, partial, templateLocation, userEmail, userPassword} = flags
 
   if (!directusUrl) ux.error('Directus URL is required for programmatic mode.')
   if (!directusToken && (!userEmail || !userPassword)) ux.error('Either Directus token or email and password are required for programmatic mode.')
   if (!templateLocation) ux.error('Template location is required for programmatic mode.')
 
-  return flags.partial ? handlePartialFlags(flags) : setAllFlagsTrue(flags)
+  return partial ? handlePartialFlags(flags) : setAllFlagsTrue(flags)
 }
 
 export function validateInteractiveFlags(flags: ApplyFlags): ApplyFlags {
@@ -72,7 +72,8 @@ function handlePartialFlags(flags: ApplyFlags): ApplyFlags {
 
 function handleDependencies(flags: ApplyFlags): void {
   if (flags.content && (!flags.schema || !flags.files)) {
-    flags.schema = flags.files = true
+    flags.schema = true
+    flags.files = true
     ux.warn('Content loading requires schema and files. Enabling schema and files flags.')
   }
 

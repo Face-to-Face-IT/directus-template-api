@@ -1,7 +1,9 @@
-import {ux} from '@oclif/core'
 import type {Config} from '@oclif/core'
+
+import {ux} from '@oclif/core'
 import {PostHog} from 'posthog-node'
-import {POSTHOG_PUBLIC_KEY, POSTHOG_HOST} from '../lib/constants.js'
+
+import {POSTHOG_HOST, POSTHOG_PUBLIC_KEY} from '../lib/constants.js'
 import {sanitizeFlags} from '../lib/utils/sanitize-flags.js'
 
 // Create a singleton client using module scope
@@ -19,8 +21,8 @@ export function getClient(debug = false): PostHog {
     client = new PostHog(
       POSTHOG_PUBLIC_KEY,
       {
-        host: POSTHOG_HOST,
         disableGeoip: false,
+        host: POSTHOG_HOST,
       },
     )
 
@@ -65,25 +67,25 @@ export async function shutdown(debug = false): Promise<void> {
  * @param options.debug Whether to log debug information
  */
 export function track({
-  lifecycle,
-  distinctId,
   command,
-  flags,
-  runId,
-  message,
   config,
+  debug = false,
+  distinctId,
+  flags,
+  lifecycle,
+  message,
   properties = {},
-  debug = false
+  runId,
 }: {
-  lifecycle: 'start' | 'complete' | 'error',
-  message?: string,
-  distinctId: string,
   command?: string,
-  flags?: Record<string, unknown>,
-  runId?: string,
   config?: Config,
-  properties?: Record<string, unknown>,
   debug?: boolean
+  distinctId: string,
+  flags?: Record<string, unknown>,
+  lifecycle: 'complete' | 'error' | 'start',
+  message?: string,
+  properties?: Record<string, unknown>,
+  runId?: string,
 }): void {
   if (debug) ux.stdout('Tracking event...')
 
@@ -91,14 +93,14 @@ export function track({
 
   const eventProperties = command
     ? {
-        runId,
-        message,
-        ...properties,
-        ...getEnvironmentInfo(config),
-        // Always sanitize sensitive flags
-        ...sanitizeFlags(flags),
-      }
-    : properties;
+      message,
+      runId,
+      ...properties,
+      ...getEnvironmentInfo(config),
+      // Always sanitize sensitive flags
+      ...sanitizeFlags(flags),
+    }
+    : properties
 
   if (debug) {
     ux.stdout('Capturing event...')
@@ -108,7 +110,7 @@ export function track({
   phClient.capture({
     distinctId,
     event: `directus_template_cli.${command}.${lifecycle}`,
-    properties: {eventProperties}
+    properties: {eventProperties},
   })
 
   if (debug) ux.stdout('Event tracked successfully')
@@ -122,15 +124,15 @@ export function track({
  * @param debug Whether to log debug information
  */
 export function captureException({
-  error,
+  debug = false,
   distinctId,
+  error,
   properties = {},
-  debug = false
 }: {
-  error: unknown,
-  distinctId: string,
-  properties?: Record<string, unknown>,
   debug?: boolean
+  distinctId: string,
+  error: unknown,
+  properties?: Record<string, unknown>,
 }): void {
   if (debug) ux.stdout('Capturing exception...')
 
@@ -168,5 +170,5 @@ function getEnvironmentInfo(config?: Config): Record<string, unknown> {
     platform: config?.platform || 'unknown',
     shell: config?.shell || 'unknown',
     version: config?.version || 'unknown',
-  };
+  }
 }

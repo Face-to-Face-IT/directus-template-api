@@ -1,11 +1,13 @@
+import {
+  isCancel, log, password, text,
+} from '@clack/prompts'
 import {readMe} from '@directus/sdk'
-import {text, log, isCancel, password} from '@clack/prompts'
 import {ux} from '@oclif/core'
 
+import {DEFAULT_DIRECTUS_URL} from '../../lib/constants.js'
 import {api} from '../sdk.js'
 import catchError from './catch-error.js'
 import validateUrl from './validate-url.js'
-import { DEFAULT_DIRECTUS_URL } from '../../lib/constants.js'
 interface AuthFlags {
   directusToken?: string;
   directusUrl: string;
@@ -19,10 +21,9 @@ interface AuthFlags {
  */
 export async function getDirectusUrl() {
   const directusUrl = await text({
-    placeholder: DEFAULT_DIRECTUS_URL,
     message: 'What is your Directus URL?',
+    placeholder: DEFAULT_DIRECTUS_URL,
   })
-
 
   if (isCancel(directusUrl)) {
     log.info('Exiting...')
@@ -52,8 +53,8 @@ export async function getDirectusUrl() {
  */
 export async function getDirectusToken(directusUrl: string) {
   const directusToken = await text({
-    placeholder: 'admin-token-here',
     message: 'What is your Directus Admin Token?',
+    placeholder: 'admin-token-here',
   })
 
   if (isCancel(directusToken)) {
@@ -64,7 +65,7 @@ export async function getDirectusToken(directusUrl: string) {
   // Validate token by fetching the user
   try {
     await api.loginWithToken(directusToken as string)
-    const response = await api.client.request(readMe())
+    await api.client.request(readMe())
     return directusToken
   } catch (error) {
     catchError(error, {

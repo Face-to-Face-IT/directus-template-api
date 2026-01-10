@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Logger accepts flexible types */
 import fs from 'node:fs'
 import path from 'pathe'
 
@@ -26,7 +27,6 @@ class Logger {
   }
 
   private initializeLogFile(): void {
-    // @ts-ignore - ignore
     const timestamp = new Date().toISOString().replaceAll(/[.:]/g, '-')
     const logDir = path.join(process.cwd(), '.directus-template-cli', 'logs')
     if (!fs.existsSync(logDir)) {

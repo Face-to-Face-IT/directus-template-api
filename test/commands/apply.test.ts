@@ -1,17 +1,7 @@
-import {expect, test} from '@oclif/test'
+import {expect} from 'chai'
 
 describe('apply', () => {
-  // test
-  // .stdout()
-  // .command(['apply'])
-  // .it('runs hello', ctx => {
-  //   expect(ctx.stdout).to.contain('hello world')
-  // })
-
-  // test
-  // .stdout()
-  // .command(['apply', '--name', 'jeff'])
-  // .it('runs hello --name jeff', ctx => {
-  //   expect(ctx.stdout).to.contain('hello jeff')
-  // })
+  it('placeholder test', () => {
+    expect(true).to.equal(true)
+  })
 })

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- File contents have dynamic types */
 import fs from 'node:fs'
 import path from 'pathe'
 

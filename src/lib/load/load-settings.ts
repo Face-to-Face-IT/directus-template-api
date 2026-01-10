@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Directus SDK types are dynamic */
 
 import type {DirectusSettings} from '@directus/sdk'
 
@@ -13,13 +14,13 @@ import readFile from '../utils/read-file.js'
 // Cast ux to any to bypass type errors
 const customDefu = createDefu((obj, key, value) => {
   if (Array.isArray(obj[key]) && Array.isArray(value)) {
-    // @ts-ignore - ignore
+    // @ts-expect-error -- SDK typing mismatch
     obj[key] = mergeArrays(key, obj[key], value)
     return true
   }
 
   if (typeof obj[key] === 'string' && typeof value === 'string') {
-    // @ts-ignore - ignore
+    // @ts-expect-error -- SDK typing mismatch
     obj[key] = mergeJsonStrings(obj[key], value)
     return true
   }
@@ -27,22 +28,23 @@ const customDefu = createDefu((obj, key, value) => {
 
 function mergeArrays(key: string, current: any[], incoming: any[]): any[] {
   const mergeKeys = {
-    /* eslint-disable camelcase */
+
     basemaps: ['key'],
     custom_aspect_ratios: ['key'],
     module_bar: ['id', 'type'],
     storage_asset_presets: ['key'],
-    /* eslint-enable camelcase */
+
   }
 
   const keys = mergeKeys[key as keyof typeof mergeKeys]
   if (!keys) return [...new Set([...current, ...incoming])]
 
-  return current.concat(
-    incoming.filter(item => !current.some(
+  return [
+    ...current,
+    ...incoming.filter(item => !current.some(
       currentItem => keys.every(k => currentItem[k] === item[k]),
     )),
-  )
+  ]
 }
 
 function mergeJsonStrings(current: string, incoming: string): string {

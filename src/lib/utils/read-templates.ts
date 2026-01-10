@@ -40,9 +40,11 @@ export async function readAllTemplates(
 
   for (const file of files) {
     const filePath = path.join(directoryPath, file)
+    // eslint-disable-next-line no-await-in-loop -- Sequential file system traversal
     const stats = await fs.promises.stat(filePath)
 
     if (stats.isDirectory()) {
+      // eslint-disable-next-line no-await-in-loop -- Sequential template reading
       const template = await readTemplate(filePath)
       if (template) {
         templates.push(template)

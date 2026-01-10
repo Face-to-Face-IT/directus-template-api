@@ -1,4 +1,5 @@
-import type {Collection, CollectionMeta, Field} from '@directus/types'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Directus SDK types are dynamic */
+import type {Field} from '@directus/types'
 
 import {
   createCollection, createField, readCollections, readFields, updateCollection,
@@ -49,12 +50,10 @@ const removeRequiredorIsNullable = (field:Field) => {
   }
 
   if (field.schema?.is_nullable === false) {
-    // eslint-disable-next-line camelcase
     field.schema.is_nullable = true
   }
 
   if (field.schema?.is_unique === true) {
-    // eslint-disable-next-line camelcase
     field.schema.is_unique = false
   }
 
@@ -82,7 +81,6 @@ async function addNewFieldsToExistingCollection(collectionName: string, fieldsTo
   for await (const field of collectionFieldsToAdd) {
     if (!existingCollectionFields.some((existingField: any) => existingField.field === field.field)) {
       try {
-        // @ts-ignore - ignore
         await api.client.request(createField(collectionName, field))
       } catch (error) {
         catchError(error)
@@ -122,7 +120,6 @@ async function addCustomFieldsOnSystemCollections(fields: any[]) {
       )
 
       if (!fieldExists) {
-        // @ts-ignore
         await api.client.request(createField(field.collection, field))
       }
     } catch (error) {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Directus SDK types are dynamic */
 import {customEndpoint, readExtensions} from '@directus/sdk'
 import {ux} from '@oclif/core'
 
@@ -35,7 +36,7 @@ export default async function loadExtensions(dir: string): Promise<void> {
       const extensionsToInstall = extensions.filter(ext =>
         ext.meta?.source === 'registry'
         && !ext.bundle
-        // @ts-ignore - ignore
+        // @ts-expect-error -- SDK typing mismatch
         && !installedExtensions.some(installed => installed.id === ext.id),
       )
 

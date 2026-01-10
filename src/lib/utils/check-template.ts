@@ -1,5 +1,3 @@
-import path from 'pathe'
-
 import readFile from '../utils/read-file.js'
 
 export default async function checkTemplate(dir: string) {

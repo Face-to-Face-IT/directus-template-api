@@ -3,56 +3,56 @@
  */
 
 export interface ApplyTemplateRequest {
-  directusUrl: string;
-  directusToken?: string;
-  userEmail?: string;
-  userPassword?: string;
-  templateLocation: string;
-  templateType?: 'community' | 'local' | 'github';
-  partial?: boolean;
   content?: boolean;
   dashboards?: boolean;
+  directusToken?: string;
+  directusUrl: string;
   extensions?: boolean;
   files?: boolean;
   flows?: boolean;
+  partial?: boolean;
   permissions?: boolean;
   schema?: boolean;
   settings?: boolean;
+  templateLocation: string;
+  templateType?: 'community' | 'github' | 'local';
+  userEmail?: string;
+  userPassword?: string;
   users?: boolean;
 }
 
 export interface ExtractTemplateRequest {
-  directusUrl: string;
-  directusToken?: string;
-  userEmail?: string;
-  userPassword?: string;
-  templateLocation?: string;
-  templateName: string;
-  /** If true, returns the template as a gzipped tar archive instead of saving to disk */
-  returnArchive?: boolean;
   /** Format for archive response: 'binary' (default) or 'base64' */
-  archiveFormat?: 'binary' | 'base64';
+  archiveFormat?: 'base64' | 'binary';
   /** Partial extraction flags - all default to true unless explicitly set to false */
   content?: boolean;
   dashboards?: boolean;
+  directusToken?: string;
+  directusUrl: string;
   extensions?: boolean;
   files?: boolean;
   flows?: boolean;
   permissions?: boolean;
+  /** If true, returns the template as a gzipped tar archive instead of saving to disk */
+  returnArchive?: boolean;
   schema?: boolean;
   settings?: boolean;
+  templateLocation?: string;
+  templateName: string;
+  userEmail?: string;
+  userPassword?: string;
   users?: boolean;
 }
 
-export interface ApiResponse<T = any> {
-  success: boolean;
+export interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
   message?: string;
+  success: boolean;
 }
 
 export interface HealthResponse {
   status: 'ok';
-  version: string;
   timestamp: string;
+  version: string;
 }

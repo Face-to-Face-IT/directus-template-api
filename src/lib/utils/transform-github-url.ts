@@ -5,7 +5,7 @@ export function transformGitHubUrl(url: string): string {
 
   if (match) {
     const repo = match[1]
-    const subpath = match[2] ? match[2] : ''
+    const subpath = match[2] || ''
     return `github:${repo}/${subpath}`
   }
 

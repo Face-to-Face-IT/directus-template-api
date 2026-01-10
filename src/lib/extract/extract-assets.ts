@@ -11,12 +11,12 @@ async function getAssetList() {
   return api.client.request(readFiles({limit: -1}))
 }
 
-async function downloadFile(file: any, dir: string) {
+async function downloadFile(file: Record<string, unknown>, dir: string) {
   const response: Response | string = await api.client.request(() => ({
     method: 'GET',
     path: `/assets/${file.id}`,
   }))
-  const fullPath = path.join(dir, 'assets', file.filename_disk)
+  const fullPath = path.join(dir, 'assets', file.filename_disk as string)
 
   if (typeof response === 'string') {
     fs.writeFileSync(fullPath, response)
