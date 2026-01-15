@@ -50,6 +50,11 @@ export default class ExtractCommand extends BaseCommand {
     directusToken: customFlags.directusToken,
     directusUrl: customFlags.directusUrl,
     disableTelemetry: customFlags.disableTelemetry,
+    excludeExtensionCollections: Flags.boolean({
+      default: false,
+      description: 'Exclude extension-managed collections (e.g., workflows) from extraction',
+      summary: 'Skip extension-managed collections like workflows',
+    }),
     extensions: Flags.boolean({
       allowNo: true,
       default: undefined,

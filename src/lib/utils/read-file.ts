@@ -4,9 +4,18 @@ import path from 'pathe'
 
 import catchError from './catch-error.js'
 
-export default function readFile(file: string, dir: string): any[] {
+export interface ReadFileOptions {
+  /** If true, return null instead of throwing when file is not found */
+  allowMissing?: boolean;
+}
+
+export default function readFile(file: string, dir: string, options: ReadFileOptions = {}): any[] | null {
   const filePath = path.join(dir, `${file}.json`) // Use path.join for proper path resolution
   if (!fs.existsSync(filePath)) {
+    if (options.allowMissing) {
+      return null
+    }
+
     catchError(`File not found: ${filePath}`)
   }
 

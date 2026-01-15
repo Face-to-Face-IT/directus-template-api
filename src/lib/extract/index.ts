@@ -38,7 +38,7 @@ export default async function extract(dir: string, flags: ExtractOptions) {
   if (flags.schema) {
     logger.log('info', 'Extracting schema', {step: 'schema'})
     await extractSchema(destination)
-    await extractCollections(destination)
+    await extractCollections(destination, {excludeExtensionCollections: flags.excludeExtensionCollections})
     await extractFields(destination)
     await extractRelations(destination)
   }
@@ -87,7 +87,7 @@ export default async function extract(dir: string, flags: ExtractOptions) {
 
   if (flags.content) {
     logger.log('info', 'Extracting content data', {step: 'content'})
-    await extractContent(destination)
+    await extractContent(destination, {excludeExtensionCollections: flags.excludeExtensionCollections})
   }
 
   if (flags.files) {

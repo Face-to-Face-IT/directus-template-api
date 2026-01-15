@@ -3,6 +3,7 @@ import {ux} from '@oclif/core'
 export interface ExtractOptions {
   content: boolean;
   dashboards: boolean;
+  excludeExtensionCollections: boolean;
   extensions: boolean;
   files: boolean;
   flows: boolean;

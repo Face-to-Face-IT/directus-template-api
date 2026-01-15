@@ -14,7 +14,7 @@ import readFile from '../utils/read-file.js'
 const BATCH_SIZE = 50
 
 export default async function loadData(dir:string) {
-  const collections = readFile('collections', dir)
+  const collections = readFile('collections', dir) ?? []
   ux.action.start(ux.colorize(DIRECTUS_PINK, `Loading data for ${collections.length} collections`))
 
   await loadSkeletonRecords(dir)
@@ -26,7 +26,7 @@ export default async function loadData(dir:string) {
 
 async function loadSkeletonRecords(dir: string) {
   ux.action.status = 'Loading skeleton records'
-  const collections = readFile('collections', dir)
+  const collections = readFile('collections', dir) ?? []
   const primaryKeyMap = await getCollectionPrimaryKeys(dir)
   const userCollections = collections
   .filter(item => !item.collection.startsWith('directus_', 0))
@@ -37,7 +37,12 @@ async function loadSkeletonRecords(dir: string) {
     const name = collection.collection
     const primaryKeyField = getPrimaryKey(primaryKeyMap, name)
     const sourceDir = path.resolve(dir, 'content')
-    const data = readFile(name, sourceDir)
+    const data = readFile(name, sourceDir, {allowMissing: true})
+
+    // Skip collections without content files (e.g., extension-managed collections)
+    if (data === null) {
+      return
+    }
 
     // Fetch existing primary keys
     const existingPrimaryKeys = await getExistingPrimaryKeys(name, primaryKeyField)
@@ -46,7 +51,6 @@ async function loadSkeletonRecords(dir: string) {
     const newData = data.filter(entry => !existingPrimaryKeys.has(entry[primaryKeyField]))
 
     if (newData.length === 0) {
-      // ux.stdout(`${ux.colorize('dim', '--')} Skipping ${name}: No new records to add`)
       return
     }
 
@@ -55,7 +59,6 @@ async function loadSkeletonRecords(dir: string) {
     )
 
     await Promise.all(batches.map((batch, index) => uploadBatch(name, batch, createItems, index)))
-    // ux.stdout(`${ux.colorize('dim', '--')} Added ${newData.length} new skeleton records to ${name}`)
   }))
 
   ux.action.status = 'Loaded skeleton records'
@@ -117,7 +120,7 @@ async function uploadBatch(collection: string, batch: any[], method: (collection
 
 async function loadFullData(dir:string) {
   ux.action.status = 'Updating records with full data'
-  const collections = readFile('collections', dir)
+  const collections = readFile('collections', dir) ?? []
   const userCollections = collections
   .filter(item => !item.collection.startsWith('directus_', 0))
   .filter(item => item.schema !== null)
@@ -126,7 +129,12 @@ async function loadFullData(dir:string) {
   await Promise.all(userCollections.map(async collection => {
     const name = collection.collection
     const sourceDir = path.resolve(dir, 'content')
-    const data = readFile(name, sourceDir)
+    const data = readFile(name, sourceDir, {allowMissing: true})
+
+    // Skip collections without content files (e.g., extension-managed collections)
+    if (data === null) {
+      return
+    }
 
     const batches = chunkArray(data, BATCH_SIZE).map(batch =>
       // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Removing user fields from data
@@ -141,7 +149,7 @@ async function loadFullData(dir:string) {
 
 async function loadSingletons(dir:string) {
   ux.action.status = 'Loading data for singleton collections'
-  const collections = readFile('collections', dir)
+  const collections = readFile('collections', dir) ?? []
   const singletonCollections = collections
   .filter(item => !item.collection.startsWith('directus_', 0))
   .filter(item => item.meta.singleton)
@@ -149,7 +157,13 @@ async function loadSingletons(dir:string) {
   await Promise.all(singletonCollections.map(async collection => {
     const name = collection.collection
     const sourceDir = path.resolve(dir, 'content')
-    const data = readFile(name, sourceDir)
+    const data = readFile(name, sourceDir, {allowMissing: true})
+
+    // Skip singletons without content files (e.g., extension-managed collections)
+    if (data === null) {
+      return
+    }
+
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Removing user fields from data
       const {user_created, user_updated, ...cleanedData} = data as any
@@ -170,7 +184,7 @@ async function loadSingletons(dir:string) {
 }
 
 async function getCollectionPrimaryKeys(dir: string) {
-  const fields = readFile('fields', dir)
+  const fields = readFile('fields', dir) ?? []
   const primaryKeys = {}
   for (const field of fields) {
     if (field.schema && field.schema?.is_primary_key) {
