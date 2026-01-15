@@ -30,7 +30,10 @@ export default async function loadTranslations(dir: string) {
       try {
         await api.client.request(createTranslations(newTranslations))
       } catch (error) {
-        catchError(error)
+        catchError(error, {
+          context: {count: newTranslations.length, operation: 'loadTranslations'},
+          fatal: true,
+        })
       }
     } else {
     // ux.stdout('-- No new translations to create')

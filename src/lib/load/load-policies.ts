@@ -32,7 +32,10 @@ export default async function loadPolicies(dir: string) {
         // Add the new policy ID to our set of existing policies
         existingPolicyIds.add(policy.id)
       } catch (error) {
-        catchError(error)
+        catchError(error, {
+          context: {operation: 'createPolicy', policyId: policy.id, policyName: policy.name},
+          fatal: true,
+        })
       }
     }
   }

@@ -22,7 +22,10 @@ export default async function updateRequiredFields(dir: string) {
 
       await api.client.request(updateField(field.collection, field.field, payload))
     } catch (error) {
-      catchError(error)
+      catchError(error, {
+        context: {collection: field.collection, field: field.field, operation: 'updateRequiredFields'},
+        fatal: true,
+      })
     }
   }
 

@@ -35,7 +35,10 @@ export default async function loadDashboards(dir: string) {
       try {
         await api.client.request(createDashboard(dashboard))
       } catch (error) {
-        catchError(error)
+        catchError(error, {
+          context: {dashboardId: dashboard.id, dashboardName: dashboard.name, operation: 'createDashboard'},
+          fatal: true,
+        })
       }
     }))
 
@@ -66,7 +69,10 @@ export async function loadPanels(dir: string) {
     try {
       await api.client.request(createPanel(panel))
     } catch (error) {
-      catchError(error)
+      catchError(error, {
+        context: {dashboardId: panel.dashboard, operation: 'createPanel', panelId: panel.id},
+        fatal: true,
+      })
     }
   }))
 }

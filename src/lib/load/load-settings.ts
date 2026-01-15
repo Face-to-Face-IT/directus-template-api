@@ -63,7 +63,10 @@ export default async function loadSettings(dir: string) {
     const mergedSettings = customDefu(currentSettings as any, settings) as DirectusSettings
     await api.client.request(updateSettings(mergedSettings))
   } catch (error) {
-    catchError(error)
+    catchError(error, {
+      context: {operation: 'loadSettings'},
+      fatal: true,
+    })
   }
 
   ux.action.stop()

@@ -27,7 +27,10 @@ export default async function extractPermissions(dir: string) {
     })
     await writeToFile('permissions', response, dir)
   } catch (error) {
-    catchError(error)
+    catchError(error, {
+      context: {operation: 'extractPermissions'},
+      fatal: true,
+    })
   }
 
   ux.action.stop()

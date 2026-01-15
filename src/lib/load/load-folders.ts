@@ -38,14 +38,20 @@ export default async function loadFolders(dir: string) {
           try {
             await api.client.request(updateFolder(id, rest))
           } catch (error) {
-            catchError(error)
+            catchError(error, {
+              context: {folderId: id, folderName: folder.name, operation: 'updateFolder'},
+              fatal: true,
+            })
           }
         }))
       } else {
         // ux.stdout('-- No new folders to create')
       }
     } catch (error) {
-      catchError(error)
+      catchError(error, {
+        context: {operation: 'loadFolders'},
+        fatal: true,
+      })
     }
   }
 

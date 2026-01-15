@@ -28,7 +28,10 @@ export default async function extractAccess(dir: string) {
 
     await writeToFile('access', response, dir)
   } catch (error) {
-    catchError(error)
+    catchError(error, {
+      context: {operation: 'extractAccess'},
+      fatal: true,
+    })
   }
 
   ux.action.stop()

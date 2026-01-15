@@ -33,7 +33,10 @@ export default async function loadFlows(dir: string) {
         if (result.status === 'fulfilled') {
           createdFlowIds.add(newFlows[index].id)
         } else {
-          catchError(result.reason)
+          catchError(result.reason, {
+            context: {flowId: newFlows[index].id, operation: 'createFlow'},
+            fatal: false,
+          })
         }
       }
 
@@ -42,7 +45,10 @@ export default async function loadFlows(dir: string) {
 
       await loadOperations(newOperations)
     } catch (error) {
-      catchError(error)
+      catchError(error, {
+        context: {operation: 'loadFlows'},
+        fatal: true,
+      })
     } finally {
       ux.action.stop()
     }
@@ -69,12 +75,18 @@ export async function loadOperations(operations: any[]) {
       })),
     ))
 
-    for (const result of results) {
+    for (const [index, result] of results.entries()) {
       if (result.status === 'rejected') {
-        catchError(result.reason)
+        catchError(result.reason, {
+          context: {operation: 'updateOperation', operationId: operations[index]?.id},
+          fatal: false,
+        })
       }
     }
   } catch (error) {
-    catchError(error)
+    catchError(error, {
+      context: {count: operations.length, operation: 'loadOperations'},
+      fatal: true,
+    })
   }
 }

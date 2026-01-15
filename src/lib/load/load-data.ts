@@ -54,7 +54,7 @@ async function loadSkeletonRecords(dir: string) {
       batch.map(entry => ({[primaryKeyField]: entry[primaryKeyField]})),
     )
 
-    await Promise.all(batches.map(batch => uploadBatch(name, batch, createItems)))
+    await Promise.all(batches.map((batch, index) => uploadBatch(name, batch, createItems, index)))
     // ux.stdout(`${ux.colorize('dim', '--')} Added ${newData.length} new skeleton records to ${name}`)
   }))
 
@@ -83,7 +83,15 @@ async function getExistingPrimaryKeys(collection: string, primaryKeyField: strin
       if (response.length < limit) break
       page++
     } catch (error) {
-      catchError(error)
+      catchError(error, {
+        context: {
+          collection,
+          operation: 'getExistingPrimaryKeys',
+          page,
+          primaryKeyField,
+        },
+        fatal: true,
+      })
       break
     }
   }
@@ -91,11 +99,19 @@ async function getExistingPrimaryKeys(collection: string, primaryKeyField: strin
   return existingKeys
 }
 
-async function uploadBatch(collection: string, batch: any[], method: (collection: string, items: any[]) => any) {
+async function uploadBatch(collection: string, batch: any[], method: (collection: string, items: any[]) => any, batchIndex?: number) {
   try {
     await api.client.request(method(collection, batch))
   } catch (error) {
-    catchError(error)
+    catchError(error, {
+      context: {
+        batchIndex,
+        batchSize: batch.length,
+        collection,
+        operation: 'uploadBatch',
+      },
+      fatal: true,
+    })
   }
 }
 
@@ -117,7 +133,7 @@ async function loadFullData(dir:string) {
       batch.map(({user_created, user_updated, ...cleanedRow}) => cleanedRow),
     )
 
-    await Promise.all(batches.map(batch => uploadBatch(name, batch, updateItemsBatch)))
+    await Promise.all(batches.map((batch, index) => uploadBatch(name, batch, updateItemsBatch, index)))
   }))
 
   ux.action.status = 'Updated records with full data'
@@ -140,7 +156,13 @@ async function loadSingletons(dir:string) {
 
       await api.client.request(updateSingleton(name, cleanedData))
     } catch (error) {
-      catchError(error)
+      catchError(error, {
+        context: {
+          collection: name,
+          operation: 'loadSingletons',
+        },
+        fatal: true,
+      })
     }
   }))
 
@@ -161,7 +183,14 @@ async function getCollectionPrimaryKeys(dir: string) {
 
 function getPrimaryKey(collectionsMap: any, collection: string) {
   if (!collectionsMap[collection]) {
-    catchError(`Collection ${collection} not found in collections map`)
+    catchError(`Collection ${collection} not found in collections map`, {
+      context: {
+        availableCollections: Object.keys(collectionsMap),
+        collection,
+        operation: 'getPrimaryKey',
+      },
+      fatal: true,
+    })
   }
 
   return collectionsMap[collection]

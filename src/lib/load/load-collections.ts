@@ -39,7 +39,13 @@ async function processCollections(collectionsToAdd: any[], fieldsToAdd: any[]) {
 
       await (existingCollection ? addNewFieldsToExistingCollection(collection.collection, fieldsToAdd, existingFields) : addNewCollectionWithFields(collection, fieldsToAdd))
     } catch (error) {
-      catchError(error)
+      catchError(error, {
+        context: {
+          collection: collection.collection,
+          operation: 'processCollections',
+        },
+        fatal: true,
+      })
     }
   }
 }
@@ -83,7 +89,14 @@ async function addNewFieldsToExistingCollection(collectionName: string, fieldsTo
       try {
         await api.client.request(createField(collectionName, field))
       } catch (error) {
-        catchError(error)
+        catchError(error, {
+          context: {
+            collection: collectionName,
+            field: field.field,
+            operation: 'addNewFieldsToExistingCollection',
+          },
+          fatal: true,
+        })
       }
     }
   }
@@ -101,7 +114,14 @@ async function updateCollections(collections: any[]) {
         await api.client.request(updateCollection(collection.collection, pl))
       }
     } catch (error) {
-      catchError(error)
+      catchError(error, {
+        context: {
+          collection: collection.collection,
+          group: collection.meta?.group,
+          operation: 'updateCollections',
+        },
+        fatal: true,
+      })
     }
   }
 }
@@ -123,7 +143,14 @@ async function addCustomFieldsOnSystemCollections(fields: any[]) {
         await api.client.request(createField(field.collection, field))
       }
     } catch (error) {
-      catchError(error)
+      catchError(error, {
+        context: {
+          collection: field.collection,
+          field: field.field,
+          operation: 'addCustomFieldsOnSystemCollections',
+        },
+        fatal: true,
+      })
     }
   }
 }

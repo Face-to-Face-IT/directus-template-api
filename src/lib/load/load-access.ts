@@ -67,9 +67,12 @@ export default async function loadAccess(dir: string) {
       } catch (error) {
         catchError(error, {
           context: {
-            access: acc,
+            accessId: acc.id,
             operation: 'createAccess',
+            policyId: acc.policy,
+            roleId: acc.role,
           },
+          fatal: true,
         })
       }
     }

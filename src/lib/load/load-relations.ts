@@ -47,7 +47,15 @@ async function addRelations(relations: any[]) {
     try {
       await api.client.request(createRelation(relation))
     } catch (error) {
-      catchError(error)
+      catchError(error, {
+        context: {
+          collection: relation.collection,
+          field: relation.field,
+          operation: 'addRelations',
+          relatedCollection: relation.related_collection,
+        },
+        fatal: true,
+      })
     }
   }
 }

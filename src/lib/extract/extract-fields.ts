@@ -33,7 +33,10 @@ export default async function extractFields(dir: string) {
 
     await writeToFile('fields', fields, dir)
   } catch (error) {
-    catchError(error)
+    catchError(error, {
+      context: {operation: 'extractFields'},
+      fatal: true,
+    })
   }
 
   ux.action.stop()

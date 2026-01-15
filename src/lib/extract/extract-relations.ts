@@ -40,7 +40,10 @@ export default async function extractRelations(dir: string) {
 
     await writeToFile('relations', relations, dir)
   } catch (error) {
-    catchError(error)
+    catchError(error, {
+      context: {operation: 'extractRelations'},
+      fatal: true,
+    })
   }
 
   ux.action.stop()
