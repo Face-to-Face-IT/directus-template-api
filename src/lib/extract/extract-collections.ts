@@ -1,7 +1,7 @@
 import {readCollections} from '@directus/sdk'
 import {ux} from '@oclif/core'
 
-import {DIRECTUS_PINK, EXTENSION_COLLECTIONS} from '../constants.js'
+import {DIRECTUS_PINK} from '../constants.js'
 import {api} from '../sdk.js'
 import catchError from '../utils/catch-error.js'
 import writeToFile from '../utils/write-to-file.js'
@@ -24,7 +24,7 @@ export default async function extractCollections(dir: string, options: ExtractCo
     .filter(collection => collection.meta?.group !== '_extensions')
 
     if (options.excludeExtensionCollections) {
-      collections = collections.filter(collection => !EXTENSION_COLLECTIONS.includes(collection.collection))
+      collections = collections.filter(collection => collection.meta?.group !== '_extensions')
     }
 
     await writeToFile('collections', collections, dir)

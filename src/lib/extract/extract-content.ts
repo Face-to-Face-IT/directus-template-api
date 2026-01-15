@@ -1,7 +1,7 @@
 import {readCollections, readItems} from '@directus/sdk'
 import {ux} from '@oclif/core'
 
-import {DIRECTUS_PINK, EXTENSION_COLLECTIONS} from '../constants.js'
+import {DIRECTUS_PINK} from '../constants.js'
 import {api} from '../sdk.js'
 import catchError from '../utils/catch-error.js'
 import writeToFile from '../utils/write-to-file.js'
@@ -18,7 +18,7 @@ async function getCollections(options: ExtractContentOptions = {}) {
   .filter(item => item.meta?.group !== '_extensions')
 
   if (options.excludeExtensionCollections) {
-    collections = collections.filter(item => !EXTENSION_COLLECTIONS.includes(item.collection))
+    collections = collections.filter(item => item.meta?.group !== '_extensions')
   }
 
   return collections.map(i => i.collection)

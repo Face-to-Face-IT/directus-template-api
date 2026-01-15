@@ -6,11 +6,17 @@ import {api} from '../sdk.js'
 import catchError from '../utils/catch-error.js'
 import writeToFile from '../utils/write-to-file.js'
 
+export interface ExtractFieldsOptions {
+  excludeExtensionCollections?: boolean;
+}
+
 /**
  * Extract fields from the Directus instance
+ * @param dir - The directory to write the fields to
+ * @param options - Options for filtering fields
  */
 
-export default async function extractFields(dir: string) {
+export default async function extractFields(dir: string, _options: ExtractFieldsOptions = {}) {
   ux.action.start(ux.colorize(DIRECTUS_PINK, 'Extracting fields'))
   try {
     // Get collections in the _extensions group to exclude their fields

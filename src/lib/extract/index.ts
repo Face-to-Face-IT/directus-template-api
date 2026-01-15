@@ -39,8 +39,8 @@ export default async function extract(dir: string, flags: ExtractOptions) {
     logger.log('info', 'Extracting schema', {step: 'schema'})
     await extractSchema(destination)
     await extractCollections(destination, {excludeExtensionCollections: flags.excludeExtensionCollections})
-    await extractFields(destination)
-    await extractRelations(destination)
+    await extractFields(destination, {excludeExtensionCollections: flags.excludeExtensionCollections})
+    await extractRelations(destination, {excludeExtensionCollections: flags.excludeExtensionCollections})
   }
 
   if (flags.files) {

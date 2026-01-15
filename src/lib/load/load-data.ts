@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Directus SDK types are dynamic */
 import {
-  createItems, readItems, updateItemsBatch, updateSingleton,
+  createItems, readCollections, readItems, updateItemsBatch, updateSingleton,
 } from '@directus/sdk'
 import {ux} from '@oclif/core'
 import path from 'pathe'
@@ -12,18 +12,29 @@ import {chunkArray} from '../utils/chunk-array.js'
 import readFile from '../utils/read-file.js'
 const BATCH_SIZE = 50
 
+/**
+ * Get the set of collection names that exist in the target Directus instance.
+ */
+async function getTargetCollectionNames(): Promise<Set<string>> {
+  const collections = await api.client.request(readCollections())
+  return new Set(collections.map(c => c.collection))
+}
+
 export default async function loadData(dir:string) {
   const collections = readFile('collections', dir) ?? []
   ux.action.start(ux.colorize(DIRECTUS_PINK, `Loading data for ${collections.length} collections`))
 
-  await loadSkeletonRecords(dir)
-  await loadFullData(dir)
-  await loadSingletons(dir)
+  // Fetch target collections once to avoid multiple API calls
+  const targetCollections = await getTargetCollectionNames()
+
+  await loadSkeletonRecords(dir, targetCollections)
+  await loadFullData(dir, targetCollections)
+  await loadSingletons(dir, targetCollections)
 
   ux.action.stop()
 }
 
-async function loadSkeletonRecords(dir: string) {
+async function loadSkeletonRecords(dir: string, targetCollections: Set<string>) {
   ux.action.status = 'Loading skeleton records'
   const collections = readFile('collections', dir) ?? []
   const primaryKeyMap = await getCollectionPrimaryKeys(dir)
@@ -31,6 +42,8 @@ async function loadSkeletonRecords(dir: string) {
   .filter(item => !item.collection.startsWith('directus_', 0))
   .filter(item => item.schema !== null)
   .filter(item => !item.meta.singleton)
+  // Skip collections that don't exist in target (e.g., extension-managed collections)
+  .filter(item => targetCollections.has(item.collection))
 
   await Promise.all(userCollections.map(async collection => {
     const name = collection.collection
@@ -118,13 +131,15 @@ async function uploadBatch(collection: string, batch: any[], method: (collection
   }
 }
 
-async function loadFullData(dir:string) {
+async function loadFullData(dir: string, targetCollections: Set<string>) {
   ux.action.status = 'Updating records with full data'
   const collections = readFile('collections', dir) ?? []
   const userCollections = collections
   .filter(item => !item.collection.startsWith('directus_', 0))
   .filter(item => item.schema !== null)
   .filter(item => !item.meta.singleton)
+  // Skip collections that don't exist in target (e.g., extension-managed collections)
+  .filter(item => targetCollections.has(item.collection))
 
   await Promise.all(userCollections.map(async collection => {
     const name = collection.collection
@@ -147,12 +162,14 @@ async function loadFullData(dir:string) {
   ux.action.status = 'Updated records with full data'
 }
 
-async function loadSingletons(dir:string) {
+async function loadSingletons(dir: string, targetCollections: Set<string>) {
   ux.action.status = 'Loading data for singleton collections'
   const collections = readFile('collections', dir) ?? []
   const singletonCollections = collections
   .filter(item => !item.collection.startsWith('directus_', 0))
   .filter(item => item.meta.singleton)
+  // Skip collections that don't exist in target (e.g., extension-managed collections)
+  .filter(item => targetCollections.has(item.collection))
 
   await Promise.all(singletonCollections.map(async collection => {
     const name = collection.collection

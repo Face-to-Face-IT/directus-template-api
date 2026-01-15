@@ -33,12 +33,3 @@ export const BSL_LICENSE_TEXT = 'For all organizations with less than $5MM USD a
 export const BSL_LICENSE_CTA = `Visit ${pinkText(BSL_LICENSE_URL)} for more information or reach out to us at ${pinkText(BSL_EMAIL)}.`
 
 export const DEFAULT_DIRECTUS_URL = 'http://localhost:8055'
-
-/**
- * Collections managed by Directus extensions that should be excluded from
- * template extract/apply operations. These collections are created by
- * extension migrations, not the template.
- */
-export const EXTENSION_COLLECTIONS = [
-  'workflows',
-]

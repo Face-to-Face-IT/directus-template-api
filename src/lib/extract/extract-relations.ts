@@ -6,11 +6,17 @@ import {api} from '../sdk.js'
 import catchError from '../utils/catch-error.js'
 import writeToFile from '../utils/write-to-file.js'
 
+export interface ExtractRelationsOptions {
+  excludeExtensionCollections?: boolean;
+}
+
 /**
  * Extract relations from the Directus instance
+ * @param dir - The directory to write the relations to
+ * @param options - Options for filtering relations
  */
 
-export default async function extractRelations(dir: string) {
+export default async function extractRelations(dir: string, _options: ExtractRelationsOptions = {}) {
   ux.action.start(ux.colorize(DIRECTUS_PINK, 'Extracting relations'))
   try {
     // Get collections in the _extensions group to exclude their relations
