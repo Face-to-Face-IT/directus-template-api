@@ -19,7 +19,9 @@ export default async function extractCollections(dir: string, options: ExtractCo
   ux.action.start(ux.colorize(DIRECTUS_PINK, 'Extracting collections'))
   try {
     const response = await api.client.request(readCollections())
-    let collections = response.filter(collection => !collection.collection.startsWith('directus_'))
+    let collections = response
+    .filter(collection => !collection.collection.startsWith('directus_'))
+    .filter(collection => collection.meta?.group !== '_extensions')
 
     if (options.excludeExtensionCollections) {
       collections = collections.filter(collection => !EXTENSION_COLLECTIONS.includes(collection.collection))

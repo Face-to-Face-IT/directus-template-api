@@ -15,6 +15,7 @@ async function getCollections(options: ExtractContentOptions = {}) {
   let collections = response
   .filter(item => !item.collection.startsWith('directus_', 0))
   .filter(item => item.schema !== null)
+  .filter(item => item.meta?.group !== '_extensions')
 
   if (options.excludeExtensionCollections) {
     collections = collections.filter(item => !EXTENSION_COLLECTIONS.includes(item.collection))

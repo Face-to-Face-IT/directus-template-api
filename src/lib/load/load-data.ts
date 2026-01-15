@@ -10,7 +10,6 @@ import {api} from '../sdk.js'
 import catchError from '../utils/catch-error.js'
 import {chunkArray} from '../utils/chunk-array.js'
 import readFile from '../utils/read-file.js'
-
 const BATCH_SIZE = 50
 
 export default async function loadData(dir:string) {
@@ -35,7 +34,6 @@ async function loadSkeletonRecords(dir: string) {
 
   await Promise.all(userCollections.map(async collection => {
     const name = collection.collection
-    const primaryKeyField = getPrimaryKey(primaryKeyMap, name)
     const sourceDir = path.resolve(dir, 'content')
     const data = readFile(name, sourceDir, {allowMissing: true})
 
@@ -43,6 +41,8 @@ async function loadSkeletonRecords(dir: string) {
     if (data === null) {
       return
     }
+
+    const primaryKeyField = getPrimaryKey(primaryKeyMap, name)
 
     // Fetch existing primary keys
     const existingPrimaryKeys = await getExistingPrimaryKeys(name, primaryKeyField)

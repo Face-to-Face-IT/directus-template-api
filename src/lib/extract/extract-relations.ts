@@ -1,4 +1,4 @@
-import {readFields, readRelations} from '@directus/sdk'
+import {readCollections, readFields, readRelations} from '@directus/sdk'
 import {ux} from '@oclif/core'
 
 import {DIRECTUS_PINK} from '../constants.js'
@@ -13,6 +13,14 @@ import writeToFile from '../utils/write-to-file.js'
 export default async function extractRelations(dir: string) {
   ux.action.start(ux.colorize(DIRECTUS_PINK, 'Extracting relations'))
   try {
+    // Get collections in the _extensions group to exclude their relations
+    const collections = await api.client.request(readCollections())
+    const extensionsCollections = new Set(
+      collections
+      .filter(c => c.meta?.group === '_extensions')
+      .map(c => c.collection),
+    )
+
     const response = await api.client.request(readRelations())
 
     // Fetching fields to filter out system fields while retaining custom fields on system collections
@@ -32,6 +40,12 @@ export default async function extractRelations(dir: string) {
           (f: { collection: string; field: string }) =>
             f.collection === i.collection && f.field === i.field,
         ),
+    )
+    // Exclude relations from _extensions group collections
+    .filter(
+      (i: {collection: string; related_collection?: string}) =>
+        !extensionsCollections.has(i.collection)
+        && !extensionsCollections.has(i.related_collection ?? ''),
     )
     .map(i => {
       delete i.meta.id
