@@ -13,7 +13,23 @@ import readFile from '../utils/read-file.js'
  * @returns {Promise<void>} - Returns nothing
  */
 export default async function loadRelations(dir: string) {
-  const relations = readFile('relations', dir)
+  const allRelations = readFile('relations', dir)
+  const collections = readFile('collections', dir) ?? []
+
+  // Get collection names managed by extensions
+  const extensionCollectionNames = new Set(
+    collections
+      .filter((collection: any) => collection.meta?.group === '_extensions')
+      .map((collection: any) => collection.collection),
+  )
+
+  // Filter out relations involving extension-managed collections
+  const relations = allRelations.filter(
+    (relation: any) =>
+      !extensionCollectionNames.has(relation.collection) &&
+      !extensionCollectionNames.has(relation.related_collection),
+  )
+
   ux.action.start(ux.colorize(DIRECTUS_PINK, `Loading ${relations.length} relations`))
 
   if (relations && relations.length > 0) {

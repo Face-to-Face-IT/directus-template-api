@@ -21,23 +21,28 @@ async function getTargetCollectionNames(): Promise<Set<string>> {
 }
 
 export default async function loadData(dir:string) {
-  const collections = readFile('collections', dir) ?? []
+  const allCollections = readFile('collections', dir) ?? []
+
+  // Filter out collections managed by extensions (group === '_extensions')
+  const collections = allCollections.filter(
+    (collection: any) => collection.meta?.group !== '_extensions',
+  )
+
   ux.action.start(ux.colorize(DIRECTUS_PINK, `Loading data for ${collections.length} collections`))
 
   // Fetch target collections once to avoid multiple API calls
   const targetCollections = await getTargetCollectionNames()
 
-  await loadSkeletonRecords(dir, targetCollections)
-  await loadFullData(dir, targetCollections)
-  await loadSingletons(dir, targetCollections)
+  await loadSkeletonRecords(dir, targetCollections, collections)
+  await loadFullData(dir, targetCollections, collections)
+  await loadSingletons(dir, targetCollections, collections)
 
   ux.action.stop()
 }
 
-async function loadSkeletonRecords(dir: string, targetCollections: Set<string>) {
+async function loadSkeletonRecords(dir: string, targetCollections: Set<string>, collections: any[]) {
   ux.action.status = 'Loading skeleton records'
-  const collections = readFile('collections', dir) ?? []
-  const primaryKeyMap = await getCollectionPrimaryKeys(dir)
+  const primaryKeyMap = await getCollectionPrimaryKeys(dir, collections)
   const userCollections = collections
   .filter(item => !item.collection.startsWith('directus_', 0))
   .filter(item => item.schema !== null)
@@ -131,9 +136,8 @@ async function uploadBatch(collection: string, batch: any[], method: (collection
   }
 }
 
-async function loadFullData(dir: string, targetCollections: Set<string>) {
+async function loadFullData(dir: string, targetCollections: Set<string>, collections: any[]) {
   ux.action.status = 'Updating records with full data'
-  const collections = readFile('collections', dir) ?? []
   const userCollections = collections
   .filter(item => !item.collection.startsWith('directus_', 0))
   .filter(item => item.schema !== null)
@@ -162,9 +166,8 @@ async function loadFullData(dir: string, targetCollections: Set<string>) {
   ux.action.status = 'Updated records with full data'
 }
 
-async function loadSingletons(dir: string, targetCollections: Set<string>) {
+async function loadSingletons(dir: string, targetCollections: Set<string>, collections: any[]) {
   ux.action.status = 'Loading data for singleton collections'
-  const collections = readFile('collections', dir) ?? []
   const singletonCollections = collections
   .filter(item => !item.collection.startsWith('directus_', 0))
   .filter(item => item.meta.singleton)
@@ -200,8 +203,15 @@ async function loadSingletons(dir: string, targetCollections: Set<string>) {
   ux.action.status = 'Loaded data for singleton collections'
 }
 
-async function getCollectionPrimaryKeys(dir: string) {
-  const fields = readFile('fields', dir) ?? []
+async function getCollectionPrimaryKeys(dir: string, collections: any[]) {
+  const allFields = readFile('fields', dir) ?? []
+
+  // Get collection names that should be included (non-extension collections)
+  const includedCollectionNames = new Set(collections.map((c: any) => c.collection))
+
+  // Filter fields to only include those from non-extension collections
+  const fields = allFields.filter((field: any) => includedCollectionNames.has(field.collection))
+
   const primaryKeys = {}
   for (const field of fields) {
     if (field.schema && field.schema?.is_primary_key) {

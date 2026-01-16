@@ -17,8 +17,23 @@ import readFile from '../utils/read-file.js'
  * @returns {Promise<void>} - Returns nothing
  */
 export default async function loadCollections(dir: string) {
-  const collectionsToAdd = readFile('collections', dir)
-  const fieldsToAdd = readFile('fields', dir)
+  const allCollections = readFile('collections', dir)
+  const allFields = readFile('fields', dir)
+
+  // Filter out collections managed by extensions (group === '_extensions')
+  const collectionsToAdd = allCollections.filter(
+    (collection: any) => collection.meta?.group !== '_extensions',
+  )
+
+  // Filter out fields belonging to extension-managed collections
+  const extensionCollectionNames = new Set(
+    allCollections
+      .filter((collection: any) => collection.meta?.group === '_extensions')
+      .map((collection: any) => collection.collection),
+  )
+  const fieldsToAdd = allFields.filter(
+    (field: any) => !extensionCollectionNames.has(field.collection),
+  )
 
   ux.action.start(ux.colorize(DIRECTUS_PINK, `Loading ${collectionsToAdd.length} collections and ${fieldsToAdd.length} fields`))
 
